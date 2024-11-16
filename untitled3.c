@@ -77,10 +77,11 @@ typedef struct Node{
 }*BiTree,BiNode;
 
 void InitBiTree(BiTree *T){
+	*T=NULL;
 	*T=(BiTree)malloc(sizeof(BiTree));
 	(*T)->previous=NULL;
-	(*T)->lchild=(BiTree)malloc(sizeof(BiTree));
-	(*T)->rchild=(BiTree)malloc(sizeof(BiTree));
+	(*T)->lchild=NULL;
+	(*T)->rchild=NULL;
 }
 
 void DestroyBiTree(BiTree *T){
@@ -156,13 +157,16 @@ void CreateBiTree(LinkStack M,LinkStack S,BiTree *p){
 	//当需要对符号进行出栈时进入二叉树构建
 	DataType sign,number;
 	PopStack(S,&sign);
-	BiTree T;
 	char ch;
+	
+	BiTree T;
 	InitBiTree(&T);
+	
 	T->previous=*p;
 	T->data=sign;
 	if(!StackEmpty(M)&&GetTop(M,&ch)&&ch>='0'&&ch<='9'){
 		PopStack(M,&number);
+		InitBiTree(&(T->lchild));
 		T->lchild->data=number;
 	}
 	else{
@@ -173,7 +177,8 @@ void CreateBiTree(LinkStack M,LinkStack S,BiTree *p){
 		}
 	}
 	if(!StackEmpty(M)&&GetTop(M,&ch)&&ch>='0'&&ch<='9'){
-		PopStack(M,&number);			
+		PopStack(M,&number);
+		InitBiTree(&(T->rchild));
 		T->rchild->data=number;
 	}
 	else{
@@ -245,7 +250,7 @@ BiTree TranslateExpress(char str[]){
 }
 
 void InOrderTraverse(BiTree T){
-	if(NULL != T){
+	if(T){
 		InOrderTraverse(T->lchild);
 		printf("%2c",T->data);
 		InOrderTraverse(T->rchild);
@@ -253,14 +258,14 @@ void InOrderTraverse(BiTree T){
 }
 
 void PostOrderTraverse(BiTree T){
-	if(NULL != T){
-		InOrderTraverse(T->lchild);
-		InOrderTraverse(T->rchild);
+	if(T){
+		PostOrderTraverse(T->lchild);
+		PostOrderTraverse(T->rchild);
 		printf("%2c",T->data);
 	}
 }
 
-int main(){
+int main(void){
 	char a[MaxSize];
 	BiTree exp;
 	printf("请输入算式\n");
@@ -268,7 +273,8 @@ int main(){
 	exp=TranslateExpress(a);
 	printf("中序表达式\n");
 	InOrderTraverse(exp);
+	printf("\n");
 	printf("后序表达式\n");
 	PostOrderTraverse(exp);
+	return 0;
 }
-
