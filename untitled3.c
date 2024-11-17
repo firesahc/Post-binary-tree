@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include<stdlib.h>
+#include <stdlib.h>
 #define MaxSize 50
 typedef char DataType;
 
@@ -71,6 +71,7 @@ int GetTop(LinkStack top,DataType *e){
 
 typedef struct Node{
 	DataType data;
+	char type;
 	struct Node *previous;
 	struct Node *lchild;
 	struct Node *rchild;
@@ -84,70 +85,6 @@ void InitBiTree(BiTree *T){
 	(*T)->rchild=NULL;
 }
 
-void DestroyBiTree(BiTree *T){
-	if(*T){
-		if((*T)->lchild){
-			DestroyBiTree(&((*T)->lchild));
-		}
-		if((*T)->rchild){
-			DestroyBiTree(&((*T)->rchild));
-		}
-		if((*T)->previous){
-			DestroyBiTree(&((*T)->previous));
-		}
-		free(*T);
-		*T=NULL;
-	}
-}
-
-BiTree Point(BiTree T,DataType e){
-	BiTree Q[MaxSize];
-	int front=0,rear=0;
-	BiNode *p;
-	if(T){
-		Q[rear]=T;
-		rear++;
-		while(front!=rear){
-			p=Q[front];
-			front++;
-			if(p->data==e){
-				return p;
-			}
-			if(p->lchild){
-				Q[rear]=p->lchild;
-				rear++;
-			}
-			if(p->rchild){
-				Q[rear]=p->rchild;
-				rear++;
-			}
-		}
-	}
-	return NULL;
-}
-
-DataType LeftChild(BiTree T,DataType e){
-	BiTree p;
-	if(T){
-		p=Point(T,e);
-		if(p&&p->lchild){
-			return p->lchild->data;
-		}
-	}
-	return;
-}
-
-DataType RightChild(BiTree T,DataType e){
-	BiTree p;
-	if(T){
-		p=Point(T,e);
-		if(p&&p->rchild){
-			return p->rchild->data;
-		}
-	}
-	return;
-}
-
 
 
 
@@ -155,52 +92,56 @@ DataType RightChild(BiTree T,DataType e){
 
 void CreateBiTree(LinkStack M,LinkStack S,BiTree *p){
 	//当需要对符号进行出栈时进入二叉树构建
-	DataType sign,number;
-	PopStack(S,&sign);
 	char ch;
-	
+	DataType sign,number;
 	BiTree T;
+	
 	InitBiTree(&T);
+	PopStack(S,&sign);
 	
 	T->previous=*p;
 	T->data=sign;
-	if(!StackEmpty(M)&&GetTop(M,&ch)&&ch>='0'&&ch<='9'){
+	T->type='+';
+	
+	if(!StackEmpty(M)&&GetTop(M,&ch)&&ch!=-128){
 		PopStack(M,&number);
 		InitBiTree(&(T->lchild));
 		T->lchild->data=number;
+		T->lchild->type='1';
 	}
 	else{
 		T->lchild=T->previous;
 		T->previous=T->previous->previous;
-		if(ch<'0'||ch>'9'){
+		if(ch==-128){
 			PopStack(M,&number);
 		}
 	}
-	if(!StackEmpty(M)&&GetTop(M,&ch)&&ch>='0'&&ch<='9'){
+	if(!StackEmpty(M)&&GetTop(M,&ch)&&ch!=-128){
 		PopStack(M,&number);
 		InitBiTree(&(T->rchild));
 		T->rchild->data=number;
+		T->rchild->type='1';
 	}
 	else{
 		T->rchild=T->previous;
 		T->previous=T->previous->previous;
-		if(ch<'0'||ch>'9'){
+		if(ch==-128){
 			PopStack(M,&number);
 		}
 	}	
-	PushStack(M,sign);
+	PushStack(M,-128);
 	*p=T;
 }
 
 
 BiTree TranslateExpress(char str[]){
+	char ch,x1,x2,value;
+	int i=0,j;
+	DataType e;
+	
 	LinkStack S;
 	LinkStack M;
 	BiTree exp;
-	
-	char ch;
-	DataType e;
-	int i=0;
 	
 	InitStack(&S);
 	InitStack(&M);
@@ -233,8 +174,17 @@ BiTree TranslateExpress(char str[]){
 		case ' ':
 			break;
 		default:
+			j=0;
 			while(ch>='0'&&ch<='9'){
-				PushStack(M,ch);
+				PushStack(M,ch-'0');
+				j++;
+				while(j>1){
+					PopStack(M,&x2);
+					PopStack(M,&x1);
+					value=10*x1+x2;
+					j--;
+					PushStack(M,value);
+				}
 				ch=str[i];
 				i++;
 			}
@@ -252,7 +202,13 @@ BiTree TranslateExpress(char str[]){
 void InOrderTraverse(BiTree T){
 	if(T){
 		InOrderTraverse(T->lchild);
-		printf("%2c",T->data);
+		if(T->type=='1'){
+			printf("%d",T->data);	
+			printf("%c",' ');
+		}
+		else{
+			printf("%-2c",T->data);
+		}
 		InOrderTraverse(T->rchild);
 	}
 }
@@ -261,20 +217,81 @@ void PostOrderTraverse(BiTree T){
 	if(T){
 		PostOrderTraverse(T->lchild);
 		PostOrderTraverse(T->rchild);
-		printf("%2c",T->data);
+		if(T->type=='1'){
+			printf("%d",T->data);	
+			printf("%c",' ');
+		}
+		else{
+			printf("%-2c",T->data);
+		}
 	}
+}
+
+float ComputeExpress(BiTree T,LinkStack M){
+	int i=0;
+	char x1,x2;
+	float result;
+	if(T){
+		ComputeExpress(T->lchild,M);
+		ComputeExpress(T->rchild,M);
+		if(T->type=='1'){
+			PushStack(M,T->data);
+		}
+		else{
+			switch (T->data) {
+			case '+':
+				PopStack(M,&x1);
+				PopStack(M,&x2);
+				result=x1+x2;
+				PushStack(M,result);
+				break;
+			case '-':
+				PopStack(M,&x1);
+				PopStack(M,&x2);
+				result=x1-x2;
+				PushStack(M,result);
+				break;
+			case '*':
+				PopStack(M,&x1);
+				PopStack(M,&x2);
+				result=x1*x2;
+				PushStack(M,result);
+				break;
+			case '/':
+				PopStack(M,&x1);
+				PopStack(M,&x2);
+				result=(float)x1/(float)x2;
+				PushStack(M,result);
+				break;
+			}
+			i++;
+		}
+	}
+	return result;
 }
 
 int main(void){
 	char a[MaxSize];
+	float result;
 	BiTree exp;
+	LinkStack M;
+	InitStack(&M);
+	
 	printf("请输入算式\n");
 	gets(a);
 	exp=TranslateExpress(a);
+	
 	printf("中序表达式\n");
 	InOrderTraverse(exp);
 	printf("\n");
+	
 	printf("后序表达式\n");
-	PostOrderTraverse(exp);
+	PostOrderTraverse(exp);	
+	printf("\n");
+	
+	printf("计算结果\n");
+	result=ComputeExpress(exp,M);
+	printf("%f",result);
+	
 	return 0;
 }
