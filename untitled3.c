@@ -1,26 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define MaxSize 50
-typedef char DataType;
 
 
 
 
 
 
-typedef struct node{
-	DataType data;
-	struct node *next;
-}LStackNode,*LinkStack;
+typedef struct Snode{
+	char sign;
+	struct Snode *next;
+}SLStackNode,*SLinkStack;
 
-void InitStack(LinkStack *top){
-	if((*top=(LinkStack)malloc(sizeof(LStackNode)))==NULL){
+void SInitStack(SLinkStack *top){
+	if((*top=(SLinkStack)malloc(sizeof(SLStackNode)))==NULL){
 		exit(-1);
 	}
 	(*top)->next=NULL;
 }
 
-int StackEmpty(LinkStack top){
+int SStackEmpty(SLinkStack top){
 	if(top->next==NULL){
 		return 1;
 	}
@@ -28,39 +27,103 @@ int StackEmpty(LinkStack top){
 		return 0;
 }
 
-int PushStack(LinkStack top,DataType e){
-	LStackNode *p;
-	if((p=(LStackNode*)malloc(sizeof(LStackNode)))==NULL){
+int SPushStack(SLinkStack top,char e){
+	SLStackNode *p;
+	if((p=(SLStackNode*)malloc(sizeof(SLStackNode)))==NULL){
 		printf("内存分配失败");
 		exit(-1);
 	}
-	p->data=e;
+	p->sign=e;
 	p->next=top->next;
 	top->next=p;
 	return 1;
 }
 
-int PopStack(LinkStack top,DataType *e){
-	LStackNode *p;
+int SPopStack(SLinkStack top,char *e){
+	SLStackNode *p;
 	p=top->next;
 	if(!p){
 		printf("栈已空");
 		return 0;
 	}
 	top->next=p->next;
-	*e=p->data;
+	*e=p->sign;
 	free(p);
 	return 1;
 }
 
-int GetTop(LinkStack top,DataType *e){
-	LStackNode *p;
+int SGetTop(SLinkStack top,char *e){
+	SLStackNode *p;
 	p=top->next;
 	if(!p){
 		printf("栈已空");
 		return 0;
 	}
-	*e=p->data;
+	*e=p->sign;
+	return 1;
+}
+
+
+
+
+
+
+typedef struct Nnode{
+	double number;
+	char tag;
+	struct Nnode *next;
+}NLStackNode,*NLinkStack;
+
+void NInitStack(NLinkStack *top){
+	if((*top=(NLinkStack)malloc(sizeof(NLStackNode)))==NULL){
+		exit(-1);
+	}
+	(*top)->next=NULL;
+}
+
+int NStackEmpty(NLinkStack top){
+	if(top->next==NULL){
+		return 1;
+	}
+	else
+		return 0;
+}
+
+int NPushStack(NLinkStack top,double e,char t){
+	NLStackNode *p;
+	if((p=(NLStackNode*)malloc(sizeof(NLStackNode)))==NULL){
+		printf("内存分配失败");
+		exit(-1);
+	}
+	p->number=e;
+	p->tag=t;
+	p->next=top->next;
+	top->next=p;
+	return 1;
+}
+
+int NPopStack(NLinkStack top,double *e){
+	NLStackNode *p;
+	p=top->next;
+	if(!p){
+		printf("栈已空");
+		return 0;
+	}
+	top->next=p->next;
+	*e=p->number;
+	free(p);
+	return 1;
+}
+
+int NGetTop(NLinkStack top,double *e,char *t){
+	NLStackNode *p;
+	p=top->next;
+	if(!p){
+		printf("栈已空");
+		return 0;
+	}
+	*e=p->number;	
+	*t=p->tag;
 	return 1;
 }
 
@@ -70,8 +133,8 @@ int GetTop(LinkStack top,DataType *e){
 
 
 typedef struct Node{
-	DataType data;
-	char type;
+	char sign;
+	double number;
 	struct Node *previous;
 	struct Node *lchild;
 	struct Node *rchild;
@@ -90,61 +153,58 @@ void InitBiTree(BiTree *T){
 
 
 
-void CreateBiTree(LinkStack M,LinkStack S,BiTree *p){
+void CreateBiTree(NLinkStack M,SLinkStack S,BiTree *p){
 	//当需要对符号进行出栈时进入二叉树构建
-	char ch;
-	DataType sign,number;
+	char sign,tag;
+	double ch,number;
 	BiTree T;
 	
 	InitBiTree(&T);
-	PopStack(S,&sign);
+	SPopStack(S,&sign);
 	
 	T->previous=*p;
-	T->data=sign;
-	T->type='+';
+	T->sign=sign;
 	
-	if(!StackEmpty(M)&&GetTop(M,&ch)&&ch!=-128){
-		PopStack(M,&number);
+	if(!NStackEmpty(M)&&NGetTop(M,&ch,&tag)&&tag!='+'){
+		NPopStack(M,&number);
 		InitBiTree(&(T->lchild));
-		T->lchild->data=number;
-		T->lchild->type='1';
+		T->lchild->number=number;
 	}
 	else{
 		T->lchild=T->previous;
 		T->previous=T->previous->previous;
-		if(ch==-128){
-			PopStack(M,&number);
+		if(tag=='+'){
+			NPopStack(M,&number);
 		}
 	}
-	if(!StackEmpty(M)&&GetTop(M,&ch)&&ch!=-128){
-		PopStack(M,&number);
+	if(!NStackEmpty(M)&&NGetTop(M,&ch,&tag)&&tag!='+'){
+		NPopStack(M,&number);
 		InitBiTree(&(T->rchild));
-		T->rchild->data=number;
-		T->rchild->type='1';
+		T->rchild->number=number;
 	}
 	else{
 		T->rchild=T->previous;
 		T->previous=T->previous->previous;
-		if(ch==-128){
-			PopStack(M,&number);
+		if(tag=='+'){
+			NPopStack(M,&number);
 		}
 	}	
-	PushStack(M,-128);
+	NPushStack(M,0.0,'+');
 	*p=T;
 }
 
 
 BiTree TranslateExpress(char str[]){
-	char ch,x1,x2,value;
+	char ch,e;
+	double x1,x2,value;
 	int i=0,j;
-	DataType e;
 	
-	LinkStack S;
-	LinkStack M;
+	SLinkStack S;
+	NLinkStack M;
 	BiTree exp;
 	
-	InitStack(&S);
-	InitStack(&M);
+	SInitStack(&S);
+	NInitStack(&M);
 	InitBiTree(&exp);
 	
 	ch=str[i];
@@ -152,38 +212,38 @@ BiTree TranslateExpress(char str[]){
 	while(ch!='\0'){
 		switch (ch) {
 		case '(':
-			PushStack(S,ch);
+			SPushStack(S,ch);
 			break;
 		case ')':
-			while(GetTop(S,&e)&&e!='('){
+			while(SGetTop(S,&e)&&e!='('){
 				CreateBiTree(M,S,&exp);//右括号导致符号出栈，进入构建二叉树
 			}
-			PopStack(S,&e);
+			SPopStack(S,&e);
 			break;
 		case '+':
 		case '-':
-			while(!StackEmpty(S)&&GetTop(S,&e)&&e!='('){
+			while(!SStackEmpty(S)&&SGetTop(S,&e)&&e!='('){
 				CreateBiTree(M,S,&exp);//加减号导致符号出栈，进入构建二叉树
 			}
-			PushStack(S,ch);
+			SPushStack(S,ch);
 			break;
 		case '*':
 		case '/':
-			PushStack(S,ch);
+			SPushStack(S,ch);
 			break;
 		case ' ':
 			break;
 		default:
 			j=0;
 			while(ch>='0'&&ch<='9'){
-				PushStack(M,ch-'0');
+				NPushStack(M,ch-'0','0');
 				j++;
 				while(j>1){
-					PopStack(M,&x2);
-					PopStack(M,&x1);
+					NPopStack(M,&x2);
+					NPopStack(M,&x1);
 					value=10*x1+x2;
 					j--;
-					PushStack(M,value);
+					NPushStack(M,value,'0');
 				}
 				ch=str[i];
 				i++;
@@ -193,7 +253,7 @@ BiTree TranslateExpress(char str[]){
 		ch=str[i];
 		i++;
 	}
-	while(!StackEmpty(S)){
+	while(!SStackEmpty(S)){
 		CreateBiTree(M,S,&exp);	//录入完毕导致符号出栈，进入构建二叉树
 	}
 	return exp;
@@ -202,12 +262,12 @@ BiTree TranslateExpress(char str[]){
 void InOrderTraverse(BiTree T){
 	if(T){
 		InOrderTraverse(T->lchild);
-		if(T->type=='1'){
-			printf("%d",T->data);	
+		if(T->sign=='\r'){
+			printf("%f",T->number);	
 			printf("%c",' ');
 		}
 		else{
-			printf("%-2c",T->data);
+			printf("%-2c",T->sign);
 		}
 		InOrderTraverse(T->rchild);
 	}
@@ -217,51 +277,50 @@ void PostOrderTraverse(BiTree T){
 	if(T){
 		PostOrderTraverse(T->lchild);
 		PostOrderTraverse(T->rchild);
-		if(T->type=='1'){
-			printf("%d",T->data);	
+		if(T->sign=='\r'){
+			printf("%f",T->number);	
 			printf("%c",' ');
 		}
 		else{
-			printf("%-2c",T->data);
+			printf("%-2c",T->sign);
 		}
 	}
 }
 
-float ComputeExpress(BiTree T,LinkStack M){
+float ComputeExpress(BiTree T,NLinkStack M){
 	int i=0;
-	char x1,x2;
-	float result;
+	double x1,x2,result;
 	if(T){
 		ComputeExpress(T->lchild,M);
 		ComputeExpress(T->rchild,M);
-		if(T->type=='1'){
-			PushStack(M,T->data);
+		if(T->sign=='\r'){
+			NPushStack(M,T->number,'0');
 		}
 		else{
-			switch (T->data) {
+			switch (T->sign) {
 			case '+':
-				PopStack(M,&x1);
-				PopStack(M,&x2);
+				NPopStack(M,&x1);
+				NPopStack(M,&x2);
 				result=x1+x2;
-				PushStack(M,result);
+				NPushStack(M,result,'0');
 				break;
 			case '-':
-				PopStack(M,&x1);
-				PopStack(M,&x2);
+				NPopStack(M,&x1);
+				NPopStack(M,&x2);
 				result=x1-x2;
-				PushStack(M,result);
+				NPushStack(M,result,'0');
 				break;
 			case '*':
-				PopStack(M,&x1);
-				PopStack(M,&x2);
+				NPopStack(M,&x1);
+				NPopStack(M,&x2);
 				result=x1*x2;
-				PushStack(M,result);
+				NPushStack(M,result,'0');
 				break;
 			case '/':
-				PopStack(M,&x1);
-				PopStack(M,&x2);
-				result=(float)x1/(float)x2;
-				PushStack(M,result);
+				NPopStack(M,&x1);
+				NPopStack(M,&x2);
+				result=x1/x2;
+				NPushStack(M,result,'0');
 				break;
 			}
 			i++;
@@ -272,23 +331,20 @@ float ComputeExpress(BiTree T,LinkStack M){
 
 int main(void){
 	char a[MaxSize];
-	float result;
+	double result;
 	BiTree exp;
-	LinkStack M;
-	InitStack(&M);
+	NLinkStack M;
+	NInitStack(&M);
 	
 	printf("请输入算式\n");
 	gets(a);
 	exp=TranslateExpress(a);
-	
 	printf("中序表达式\n");
 	InOrderTraverse(exp);
 	printf("\n");
-	
 	printf("后序表达式\n");
 	PostOrderTraverse(exp);	
 	printf("\n");
-	
 	printf("计算结果\n");
 	result=ComputeExpress(exp,M);
 	printf("%f",result);
